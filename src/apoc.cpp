@@ -1,8 +1,22 @@
+// ===== Established 2024-04-17 - 2024-0X-0X =====
+//
+//  Functionality: Generates the game.
+//
+// ===============================================
+
+
+
 #include <SFML/Graphics.hpp>
 #include "Input.hpp"
 
 
 
+/**
+ * Enables for user input of a vector
+ * @param argc number of arguments
+ * @param argv the commands
+ * @return 0 for no errors, otherwise 1.
+*/
 int main()
 {
     // setup game executable
