@@ -10,6 +10,11 @@
 
 
 
+/**
+ * Generates sprite input
+ * @param sprite The sprite.
+ * @return nothing
+*/
 void input(sf::CircleShape& shape) {
     // move up
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up) ||
