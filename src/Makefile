@@ -7,4 +7,4 @@ FILES = Input.cpp -o apoc apoc.cpp
 
 all:
 	$(COMP) $(BASIC_FLAGS) $(PACKAGES) $(FILES) $(ADD_FLAGS)
-	apoc.exe
+	# apoc.exe
