@@ -64,9 +64,15 @@ int main()
     health.setPosition(100, 650);
 
     // test projectiles
-    sf::RectangleShape bullet(sf::Vector2f(15, 5));
+    /*sf::RectangleShape bullet(sf::Vector2f(15, 5));
     bullet.setFillColor(sf::Color::Yellow);
-    vector<sf::RectangleShape> bullets;
+    vector<sf::RectangleShape> bullets;*/
+
+    sf::CircleShape bullet(5.f);
+    bullet.setFillColor(sf::Color::White);
+    vector<sf::CircleShape> bullets;
+
+
     //vector<sf::CircleShape> bullets;
     sf::Clock clock; // starts the clock
     vector<float> direction;
@@ -115,6 +121,8 @@ int main()
     //view.setCenter(shape.getPosition().x, shape.getPosition().y);
     //window.setView(view);
     sf::View uiView = window.getDefaultView();
+
+    window.setMouseCursorVisible(false);
     
     // setup window options: open and close
     while (window.isOpen())
@@ -157,7 +165,7 @@ int main()
         window.draw(crosshair);
         window.draw(score_txt);
         window.draw(fps);
-
+        
         //window.setView(view);
         //window.draw(test_txt);
 
