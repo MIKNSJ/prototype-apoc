@@ -32,16 +32,36 @@ int main()
     sf::RenderWindow window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT),
         "apoc.exe");
     
+    // setup font
+    sf::Font font;
+    if (!font.loadFromFile("../assets/scpro.ttf"))
+    {
+        cout << "The specified font failed to load." << endl;
+    }
+    
     // test sprite, default: circle
     sf::CircleShape shape(25.f);
     shape.setFillColor(sf::Color::Red);
+    //sf::CircleShape *shape_ptr;
+    //shape_ptr = &shape;
+    //cout << shape_ptr->getPosition().x << endl;
+    //cout << shape_ptr->getPosition().y << endl;
+    sf::FloatRect shape_hitbox;
 
     // healthbar
+    int health_num = 100;
     sf::RectangleShape health_bar(sf::Vector2f(300, 30));
     health_bar.setFillColor(sf::Color::Green);
     health_bar.setOutlineColor(sf::Color::Red);
     health_bar.setOutlineThickness(5);
     health_bar.setOrigin(-490, -650);
+
+    // heath in num
+    sf::Text health;
+    health.setFont(font);
+    health.setFillColor(sf::Color::Blue);
+    health.setString(string("HP: ") + to_string(health_num));
+    health.setPosition(100, 650);
 
     // test projectiles
     sf::RectangleShape bullet(sf::Vector2f(15, 5));
@@ -51,7 +71,7 @@ int main()
     sf::Clock clock; // starts the clock
     vector<float> direction;
     //sf::Vector2f bullet_pos(shape.getPosition().x + shape.getRadius(), shape.getPosition().y + shape.getRadius());
-    double fired_cnt = 0;
+    sf::FloatRect bullet_hitbox;
 
     // crosshair
     sf::CircleShape crosshair(5.f);
@@ -62,27 +82,39 @@ int main()
     vector<sf::CircleShape> bots;
     sf::CircleShape bot(25.f);
     bot.setFillColor(sf::Color::Magenta);
+    vector<float> enemy_direction;
+    sf::FloatRect enemy_hitbox;
 
     // fps
     sf::Clock clock_three;
 
+    // ig timer
+    sf::Clock clock_four;
+    sf::Time ig_time;
+    sf::Text ig_timer;
+    ig_timer.setFont(font);
+    ig_timer.setFillColor(sf::Color::Blue);
+    ig_timer.setPosition(100, 600);
+
     // font and text
-    sf::Font font;
-    if (!font.loadFromFile("../assets/scpro.ttf"))
-    {
-        cout << "The specified font failed to load." << endl;
-    }
     sf::Text test_txt;
     test_txt.setFont(font);
     test_txt.setString("Test");
-    sf::Text fired;
+    sf::Text score_txt;
     sf::Text fps;
-    fired.setFont(font);
+    score_txt.setFont(font);
     fps.setFont(font);
-    fired.setFillColor(sf::Color::Blue);
+    score_txt.setFillColor(sf::Color::Blue);
     fps.setFillColor(sf::Color::Blue);
-    fired.setPosition(1000, 600);
+    score_txt.setPosition(1000, 600);
     fps.setPosition(1000, 650);
+    int score = 0;
+
+    // setup camera
+    sf::View view(sf::Vector2f(0, 0), sf::Vector2f(1920, 1080));
+    //view.setCenter(shape.getPosition().x, shape.getPosition().y);
+    //window.setView(view);
+    sf::View uiView = window.getDefaultView();
     
     // setup window options: open and close
     while (window.isOpen())
@@ -92,36 +124,50 @@ int main()
         {
             if (event.type == sf::Event::Closed)
                 window.close();
+            
+            // catch the resize events
+            if (event.type == sf::Event::Resized) {
+                // ...
+            }
         }
+
+        
+        health.setString(string("HP: ") + to_string(health_num));
 
         sf::Time fps_cnt = clock_three.getElapsedTime();
         fps.setString(to_string(1.0f / fps_cnt.asSeconds()));
         clock_three.restart();
 
-        fired.setString(to_string(fired_cnt));
+        score_txt.setString(string("Score: ") + to_string(score));
+
+        ig_time = clock_four.getElapsedTime();
+        ig_timer.setString(to_string(ig_time.asSeconds()));
+
 
         window.clear();
-        window.draw(health_bar);
+        //view.setCenter(shape.getPosition().x, shape.getPosition().y);
+        //window.setView(view);
         window.draw(shape);
+
+        //window.draw(health_bar);
+
+        //window.setView(uiView);
+        window.draw(health);
+        window.draw(ig_timer);
         window.draw(crosshair);
-        window.draw(fired);
+        window.draw(score_txt);
         window.draw(fps);
+
+        //window.setView(view);
         //window.draw(test_txt);
 
         crosshair.setPosition(sf::Mouse::getPosition(window).x, sf::Mouse::getPosition(window).y);
+
         sf::Time fire_rate = clock.getElapsedTime();
         sf::Vector2f bullet_pos(shape.getPosition().x + shape.getRadius(), shape.getPosition().y + shape.getRadius());
 
-        //double player_pos_x = shape.getPosition().x;
-        //double player_pos_y = shape.getPosition().y;
-
-        //cout << shape.getPosition().x << endl;
-        //cout << shape.getPosition().y << endl;
-        //cout << clock.getElapsedTime().asSeconds() << endl;
-
         if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
             if (fire_rate.asSeconds() >= 0.3f) {
-                fired_cnt++;
                 fire_rate = clock.restart();
                 //bullet.setPosition(shape.getPosition());
                 bullet.setPosition(bullet_pos);
@@ -142,30 +188,57 @@ int main()
             window.draw(bullets[i]);
             bullets[i].move(0.5f * cos(direction[i]), 0.5f * sin(direction[i]));
 
-            if (bullets[i].getPosition().x > 1000 || bullets[i].getPosition().x < 0 ||
-                bullets[i].getPosition().y < 0 || bullets[i].getPosition().y > 700) {
+            /*if (bullets[i].getPosition().x > window.getSize().x || bullets[i].getPosition().x < 0 ||
+                bullets[i].getPosition().y < 0 || bullets[i].getPosition().y > window.getSize().y) {
                 bullets.erase(bullets.begin() + i);
                 direction.erase(direction.begin() + i);
-            }
+            }*/
         }
 
         sf::Time spawn_rate = clock_two.getElapsedTime();
-        if (spawn_rate.asSeconds() >= 2.0f) {
+        if (spawn_rate.asSeconds() >= 3.0f) {
             bot.setPosition(rand() % 1000, rand() % 1000);
             bots.push_back(bot);
+            enemy_direction.push_back(atan2(shape.getPosition().y - bot.getPosition().y,
+                    shape.getPosition().x - bot.getPosition().x));
 
-            window.draw(bot);
-            bot.move(0.5f, 0);
             spawn_rate = clock_two.restart();
         }
 
         for (int i = 0; i < (int)bots.size(); i++) {
             window.draw(bots[i]);
-            bots[i].move(0.5f, 0);
+            enemy_direction[i] = atan2(shape.getPosition().y - bots[i].getPosition().y,
+                    shape.getPosition().x - bots[i].getPosition().x);
+            bots[i].move(0.3f * cos(enemy_direction[i]), 0.3f * sin(enemy_direction[i]));
 
-            if (bots[i].getPosition().x > 1000 || bots[i].getPosition().x < 0 ||
+
+            /*if (bots[i].getPosition().x > 1000 || bots[i].getPosition().x < 0 ||
                 bots[i].getPosition().y < 0 || bots[i].getPosition().y > 700) {
                 bots.erase(bots.begin() + i);
+                enemy_direction.erase(enemy_direction.begin() + i);
+            }*/
+
+            enemy_hitbox = bots[i].getGlobalBounds();
+            shape_hitbox = shape.getGlobalBounds();
+            if (shape_hitbox.intersects(enemy_hitbox)) {
+                bots.erase(bots.begin() + i);
+                enemy_direction.erase(enemy_direction.begin() + i);
+                health_num-=10;
+            }
+        }
+
+
+        for (int i = 0; i < (int)bullets.size(); i++) {
+            for (int j = 0; j < (int)bots.size(); j++) {
+                bullet_hitbox = bullets[i].getGlobalBounds();
+                shape_hitbox = shape.getGlobalBounds();
+                if (bullet_hitbox.intersects(enemy_hitbox)) {
+                    bullets.erase(bullets.begin() + i);
+                    direction.erase(direction.begin() + i);
+                    bots.erase(bots.begin() + j);
+                    enemy_direction.erase(enemy_direction.begin() + j);
+                    score++;
+                }
             }
         }
         window.display();
