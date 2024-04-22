@@ -45,15 +45,20 @@ class Player {
 */
 class Enemy {
     public:
-        sf::Clock spawn_delay;
+        sf::Clock spawn_timer;
         sf::CircleShape bot;
         vector<sf::CircleShape> bots;
         vector<float> direction;
         sf::FloatRect hitbox;
         sf::Vector2f position;
+        float spawn_delay;
+        float speed_modifier;
+        int perk;
+        int perk_two;
 
-        Enemy() : spawn_delay(), bot(20.f), bots(), direction(), hitbox(),
-            position() {
+        Enemy() : spawn_timer(), bot(20.f), bots(), direction(), hitbox(),
+            position(), spawn_delay(5.0), speed_modifier(1.0), perk(0),
+            perk_two(0) {
             bot.setFillColor(sf::Color::Magenta);
             hitbox = bot.getGlobalBounds();
             position = bot.getPosition();
@@ -91,14 +96,16 @@ class HUD {
         sf::Clock fps_timer;
         sf::Clock ig_timer;
         sf::Text display_ig_time;
+        int minute;
+        int seconds;
         sf::Text display_fps;
         sf::Text display_health;
         sf::Text display_score;
         int score;
 
         HUD(sf::RenderWindow &window) : font(), crosshair(5.f), fps_timer(),
-            ig_timer(), display_ig_time(), display_fps(), display_health(),
-            display_score(), score(0) {
+            ig_timer(), display_ig_time(), minute(0), seconds(0), display_fps(),
+            display_health(), display_score(), score(0) {
 
             // Setup the default font of this game: Source Code Pro.
             if (!font.loadFromFile("../assets/scpro.ttf")) {
@@ -110,19 +117,19 @@ class HUD {
 
             display_fps.setFont(font);
             display_fps.setFillColor(sf::Color::Blue);
-            display_fps.setPosition(1000, 650);
+            display_fps.setPosition(1045, 650);
 
             display_ig_time.setFont(font);
             display_ig_time.setFillColor(sf::Color::Blue);
-            display_ig_time.setPosition(100, 600);
+            display_ig_time.setPosition(1045, 600);
 
             display_health.setFont(font);
             display_health.setFillColor(sf::Color::Blue);
-            display_health.setPosition(100, 650);
+            display_health.setPosition(50, 600);
 
             display_score.setFont(font);
             display_score.setFillColor(sf::Color::Blue);
-            display_score.setPosition(1000, 600);
+            display_score.setPosition(50, 650);
         }
 };
 // ============================================================================
@@ -140,6 +147,7 @@ int main()
     sf::RenderWindow window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT),
         "apoc.exe");
     window.setMouseCursorVisible(false);
+    window.setFramerateLimit(120);
     // ========================================================================
 
 
@@ -170,16 +178,46 @@ int main()
         }
         // ====================================================================
 
-        // ====================== HUD ========================================
+        // ===================== SPRITE/PLAYER ================================
+        // ==================== PLAYER BOUNDARIES =============================
+        if (player.sprite.getPosition().x < 0) {
+            player.sprite.setPosition(0, player.sprite.getPosition().y);
+        }
+
+        if (player.sprite.getPosition().x > 1230) {
+            player.sprite.setPosition(1230, player.sprite.getPosition().y);
+        }
+
+        if (player.sprite.getPosition().y < 0) {
+            player.sprite.setPosition(player.sprite.getPosition().x, 0);
+        }
+
+        if (player.sprite.getPosition().y > 670) {
+            player.sprite.setPosition(player.sprite.getPosition().x, 670);
+        }
+        // ====================================================================
+        // ====================================================================
+
+        // ====================== HUD =========================================
         hud.display_health.setString(string("HP: ") + to_string(player.health));
         hud.crosshair.setPosition(sf::Mouse::getPosition(window).x,
             sf::Mouse::getPosition(window).y);
-        hud.display_fps.setString(
+        hud.display_fps.setString("FPS: " +
             to_string(1.0f / hud.fps_timer.getElapsedTime().asSeconds()));
         hud.fps_timer.restart();
-        hud.display_score.setString(string("Score: ") + to_string(hud.score));
-        hud.display_ig_time.setString(
-            to_string(hud.ig_timer.getElapsedTime().asSeconds()));
+        hud.display_score.setString(string("SCORE: ") + to_string(hud.score));
+        if (hud.seconds == 60) {
+            hud.ig_timer.restart();
+            hud.minute++;
+        }
+        hud.seconds = hud.ig_timer.getElapsedTime().asSeconds();
+        if (hud.seconds < 10) {
+            hud.display_ig_time.setString(string("TIMER: ") +
+                to_string(hud.minute) + ":0" + to_string(hud.seconds));
+        } else {
+            hud.display_ig_time.setString(string("TIMER: ") +
+                to_string(hud.minute) + ":" + to_string(hud.seconds));
+        }
         // ====================================================================
 
         // ============== DRAW ================================================
@@ -212,8 +250,8 @@ int main()
 
         for (int i = 0; i < (int)projectile.bullets.size(); i++) {
             window.draw(projectile.bullets[i]);
-            projectile.bullets[i].move(0.5f * cos(projectile.direction[i]),
-                0.5f * sin(projectile.direction[i]));
+            projectile.bullets[i].move(5.0f * cos(projectile.direction[i]),
+                5.0f * sin(projectile.direction[i]));
 
             if (projectile.bullets[i].getPosition().x > window.getSize().x ||
                 projectile.bullets[i].getPosition().x < 0 ||
@@ -226,13 +264,24 @@ int main()
         // ====================================================================
 
         // ================= ENEMY ============================================
-        if (enemy.spawn_delay.getElapsedTime().asSeconds() >= 3.0f) {
-            enemy.bot.setPosition(rand() % 1000, rand() % 1000);
+        if (enemy.perk == 5 && enemy.spawn_delay > 1.0) {
+            enemy.perk = 0;
+            enemy.spawn_delay-=0.1;
+        }
+
+        if (enemy.perk_two == 10 && enemy.speed_modifier < 3.0) {
+            enemy.perk_two = 0;
+            enemy.speed_modifier+=0.1;
+        }
+
+        if (enemy.spawn_timer.getElapsedTime().asSeconds() >=
+            enemy.spawn_delay) {
+            enemy.bot.setPosition(rand() % 1230, 0);
             enemy.bots.push_back(enemy.bot);
             enemy.direction.push_back(atan2(
                     player.sprite.getPosition().y - enemy.bot.getPosition().y,
                     player.sprite.getPosition().x - enemy.bot.getPosition().x));
-            enemy.spawn_delay.restart();
+            enemy.spawn_timer.restart();
         }
 
         for (int i = 0; i < (int)enemy.bots.size(); i++) {
@@ -240,14 +289,15 @@ int main()
             enemy.direction[i] = atan2(
                 player.sprite.getPosition().y - enemy.bots[i].getPosition().y,
                 player.sprite.getPosition().x - enemy.bots[i].getPosition().x);
-            enemy.bots[i].move(0.3f * cos(enemy.direction[i]),
-                0.3f * sin(enemy.direction[i]));
+            enemy.bots[i].move(enemy.speed_modifier * cos(enemy.direction[i]),
+                enemy.speed_modifier * sin(enemy.direction[i]));
+
             enemy.hitbox = enemy.bots[i].getGlobalBounds();
             player.hitbox = player.sprite.getGlobalBounds();
             if (player.hitbox.intersects(enemy.hitbox)) {
                 enemy.bots.erase(enemy.bots.begin() + i);
                 enemy.direction.erase(enemy.direction.begin() + i);
-                player.health-=10;
+                player.health--;
             }
         }
         // ====================================================================
@@ -257,6 +307,7 @@ int main()
             for (int j = 0; j < (int)enemy.bots.size(); j++) {
                 projectile.hitbox = projectile.bullets[i].getGlobalBounds();
                 player.hitbox = player.sprite.getGlobalBounds();
+
                 if (projectile.hitbox.intersects(enemy.hitbox)) {
                     projectile.bullets.erase(projectile.bullets.begin() + i);
                     projectile.direction.erase(
@@ -264,6 +315,8 @@ int main()
                     enemy.bots.erase(enemy.bots.begin() + j);
                     enemy.direction.erase(enemy.direction.begin() + j);
                     hud.score++;
+                    enemy.perk++;
+                    enemy.perk_two++;
                 }
             }
         }
