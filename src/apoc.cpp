@@ -20,6 +20,114 @@ using namespace std;
 
 
 
+// =========================== CLASSES ========================================
+/**
+ * Player class
+*/
+class Player {
+    public:
+        sf::CircleShape sprite;
+        sf::FloatRect hitbox;
+        sf::Vector2f position;
+        int health;
+
+        Player() : sprite(25.f), hitbox(), position(), health(100) {
+            sprite.setFillColor(sf::Color::Red);
+            sprite.setPosition(640, 550);
+            hitbox = sprite.getGlobalBounds();
+            position = sprite.getPosition();
+        }
+};
+// ============================================================================
+
+/**
+ * Enemy class
+*/
+class Enemy {
+    public:
+        sf::Clock spawn_delay;
+        sf::CircleShape bot;
+        vector<sf::CircleShape> bots;
+        vector<float> direction;
+        sf::FloatRect hitbox;
+        sf::Vector2f position;
+
+        Enemy() : spawn_delay(), bot(20.f), bots(), direction(), hitbox(),
+            position() {
+            bot.setFillColor(sf::Color::Magenta);
+            hitbox = bot.getGlobalBounds();
+            position = bot.getPosition();
+        }
+};
+// ============================================================================
+
+/**
+ * Projectile class
+*/
+class Projectile {
+    public:
+        sf::Clock fire_delay;
+        sf::CircleShape bullet;
+        vector<sf::CircleShape> bullets;
+        vector<float> direction;
+        sf::FloatRect hitbox;
+        sf::Vector2f start_position;
+    
+    Projectile() : fire_delay(), bullet(5.0f), bullets(), direction(), hitbox(),
+    start_position() {
+        bullet.setFillColor(sf::Color::White);
+        hitbox = bullet.getGlobalBounds();
+    }
+};
+// ============================================================================
+
+/**
+ * HUD class
+*/
+class HUD {
+    public:
+        sf::Font font;
+        sf::CircleShape crosshair;
+        sf::Clock fps_timer;
+        sf::Clock ig_timer;
+        sf::Text display_ig_time;
+        sf::Text display_fps;
+        sf::Text display_health;
+        sf::Text display_score;
+        int score;
+
+        HUD(sf::RenderWindow &window) : font(), crosshair(5.f), fps_timer(),
+            ig_timer(), display_ig_time(), display_fps(), display_health(),
+            display_score(), score(0) {
+
+            // Setup the default font of this game: Source Code Pro.
+            if (!font.loadFromFile("../assets/scpro.ttf")) {
+                cout << "The required font has failed to load." << endl;
+                window.close();
+            }
+
+            crosshair.setFillColor(sf::Color::Red);
+
+            display_fps.setFont(font);
+            display_fps.setFillColor(sf::Color::Blue);
+            display_fps.setPosition(1000, 650);
+
+            display_ig_time.setFont(font);
+            display_ig_time.setFillColor(sf::Color::Blue);
+            display_ig_time.setPosition(100, 600);
+
+            display_health.setFont(font);
+            display_health.setFillColor(sf::Color::Blue);
+            display_health.setPosition(100, 650);
+
+            display_score.setFont(font);
+            display_score.setFillColor(sf::Color::Blue);
+            display_score.setPosition(1000, 600);
+        }
+};
+// ============================================================================
+// ======================== END OF CLASSES ====================================
+
 /**
  * Enables for user input of a vector
  * @param argc number of arguments
@@ -28,105 +136,27 @@ using namespace std;
 */
 int main()
 {
-    // setup game executable
+    // ========== WINDOW SETTINGS =============================================
     sf::RenderWindow window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT),
         "apoc.exe");
-    
-    // setup font
-    sf::Font font;
-    if (!font.loadFromFile("../assets/scpro.ttf"))
-    {
-        cout << "The specified font failed to load." << endl;
-    }
-    
-    // test sprite, default: circle
-    sf::CircleShape shape(25.f);
-    shape.setFillColor(sf::Color::Red);
-    //sf::CircleShape *shape_ptr;
-    //shape_ptr = &shape;
-    //cout << shape_ptr->getPosition().x << endl;
-    //cout << shape_ptr->getPosition().y << endl;
-    sf::FloatRect shape_hitbox;
-
-    // healthbar
-    int health_num = 100;
-    sf::RectangleShape health_bar(sf::Vector2f(300, 30));
-    health_bar.setFillColor(sf::Color::Green);
-    health_bar.setOutlineColor(sf::Color::Red);
-    health_bar.setOutlineThickness(5);
-    health_bar.setOrigin(-490, -650);
-
-    // heath in num
-    sf::Text health;
-    health.setFont(font);
-    health.setFillColor(sf::Color::Blue);
-    health.setString(string("HP: ") + to_string(health_num));
-    health.setPosition(100, 650);
-
-    // test projectiles
-    /*sf::RectangleShape bullet(sf::Vector2f(15, 5));
-    bullet.setFillColor(sf::Color::Yellow);
-    vector<sf::RectangleShape> bullets;*/
-
-    sf::CircleShape bullet(5.f);
-    bullet.setFillColor(sf::Color::White);
-    vector<sf::CircleShape> bullets;
-
-
-    //vector<sf::CircleShape> bullets;
-    sf::Clock clock; // starts the clock
-    vector<float> direction;
-    //sf::Vector2f bullet_pos(shape.getPosition().x + shape.getRadius(), shape.getPosition().y + shape.getRadius());
-    sf::FloatRect bullet_hitbox;
-
-    // crosshair
-    sf::CircleShape crosshair(5.f);
-    crosshair.setFillColor(sf::Color::Red);
-
-    // enemy
-    sf::Clock clock_two;
-    vector<sf::CircleShape> bots;
-    sf::CircleShape bot(25.f);
-    bot.setFillColor(sf::Color::Magenta);
-    vector<float> enemy_direction;
-    sf::FloatRect enemy_hitbox;
-
-    // fps
-    sf::Clock clock_three;
-
-    // ig timer
-    sf::Clock clock_four;
-    sf::Time ig_time;
-    sf::Text ig_timer;
-    ig_timer.setFont(font);
-    ig_timer.setFillColor(sf::Color::Blue);
-    ig_timer.setPosition(100, 600);
-
-    // font and text
-    sf::Text test_txt;
-    test_txt.setFont(font);
-    test_txt.setString("Test");
-    sf::Text score_txt;
-    sf::Text fps;
-    score_txt.setFont(font);
-    fps.setFont(font);
-    score_txt.setFillColor(sf::Color::Blue);
-    fps.setFillColor(sf::Color::Blue);
-    score_txt.setPosition(1000, 600);
-    fps.setPosition(1000, 650);
-    int score = 0;
-
-    // setup camera
-    sf::View view(sf::Vector2f(0, 0), sf::Vector2f(1920, 1080));
-    //view.setCenter(shape.getPosition().x, shape.getPosition().y);
-    //window.setView(view);
-    sf::View uiView = window.getDefaultView();
-
     window.setMouseCursorVisible(false);
+    // ========================================================================
+
+
+
+    // ================ INIT ==================================================
+    Player player;
+    Enemy enemy;
+    Projectile projectile;
+    HUD hud(window);
+    // ========================================================================
     
-    // setup window options: open and close
-    while (window.isOpen())
-    {
+
+
+    // =============== GAME ===================================================
+    while (window.isOpen()) {
+
+        // ================== EVENT ===========================================
         sf::Event event;
         while (window.pollEvent(event))
         {
@@ -138,121 +168,112 @@ int main()
                 // ...
             }
         }
+        // ====================================================================
 
-        
-        health.setString(string("HP: ") + to_string(health_num));
+        // ====================== HUD ========================================
+        hud.display_health.setString(string("HP: ") + to_string(player.health));
+        hud.crosshair.setPosition(sf::Mouse::getPosition(window).x,
+            sf::Mouse::getPosition(window).y);
+        hud.display_fps.setString(
+            to_string(1.0f / hud.fps_timer.getElapsedTime().asSeconds()));
+        hud.fps_timer.restart();
+        hud.display_score.setString(string("Score: ") + to_string(hud.score));
+        hud.display_ig_time.setString(
+            to_string(hud.ig_timer.getElapsedTime().asSeconds()));
+        // ====================================================================
 
-        sf::Time fps_cnt = clock_three.getElapsedTime();
-        fps.setString(to_string(1.0f / fps_cnt.asSeconds()));
-        clock_three.restart();
-
-        score_txt.setString(string("Score: ") + to_string(score));
-
-        ig_time = clock_four.getElapsedTime();
-        ig_timer.setString(to_string(ig_time.asSeconds()));
-
-
+        // ============== DRAW ================================================
         window.clear();
-        //view.setCenter(shape.getPosition().x, shape.getPosition().y);
-        //window.setView(view);
-        window.draw(shape);
+        window.draw(player.sprite);
+        window.draw(hud.display_health);
+        window.draw(hud.display_ig_time);
+        window.draw(hud.crosshair);
+        window.draw(hud.display_score);
+        window.draw(hud.display_fps);
+        // ====================================================================
 
-        //window.draw(health_bar);
-
-        //window.setView(uiView);
-        window.draw(health);
-        window.draw(ig_timer);
-        window.draw(crosshair);
-        window.draw(score_txt);
-        window.draw(fps);
-        
-        //window.setView(view);
-        //window.draw(test_txt);
-
-        crosshair.setPosition(sf::Mouse::getPosition(window).x, sf::Mouse::getPosition(window).y);
-
-        sf::Time fire_rate = clock.getElapsedTime();
-        sf::Vector2f bullet_pos(shape.getPosition().x + shape.getRadius(), shape.getPosition().y + shape.getRadius());
-
+        // ======================== PROJECTILE ================================
+        projectile.start_position = sf::Vector2f(
+            player.sprite.getPosition().x + player.sprite.getRadius(),
+            player.sprite.getPosition().y + player.sprite.getRadius());
         if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
-            if (fire_rate.asSeconds() >= 0.3f) {
-                fire_rate = clock.restart();
-                //bullet.setPosition(shape.getPosition());
-                bullet.setPosition(bullet_pos);
-                bullets.push_back(bullet);
-                direction.push_back(atan2(sf::Mouse::getPosition(window).y - shape.getPosition().y,
-                    sf::Mouse::getPosition(window).x - shape.getPosition().x));
+            if (projectile.fire_delay.getElapsedTime().asSeconds() >= 0.3f) {
+                projectile.fire_delay.restart();
+                projectile.bullet.setPosition(projectile.start_position);
+                projectile.bullets.push_back(projectile.bullet);
+                projectile.direction.push_back(atan2(
+                    sf::Mouse::getPosition(window).y -
+                    player.sprite.getPosition().y,
+                    sf::Mouse::getPosition(window).x -
+                    player.sprite.getPosition().x));
             }
 
-            /* bullets.push_back(sf::CircleShape());
-            bullets.back().setRadius(5);
-            bullets.back().setOrigin(5,5);
-            bullets.back().setPosition(shape.getPosition());
-            direction.push_back(atan2(sf::Mouse::getPosition(window).y - shape.getPosition().y,
-                    sf::Mouse::getPosition(window).x - shape.getPosition().x)); */
         }
 
-        for (int i = 0; i < (int)bullets.size(); i++) {
-            window.draw(bullets[i]);
-            bullets[i].move(0.5f * cos(direction[i]), 0.5f * sin(direction[i]));
+        for (int i = 0; i < (int)projectile.bullets.size(); i++) {
+            window.draw(projectile.bullets[i]);
+            projectile.bullets[i].move(0.5f * cos(projectile.direction[i]),
+                0.5f * sin(projectile.direction[i]));
 
-            /*if (bullets[i].getPosition().x > window.getSize().x || bullets[i].getPosition().x < 0 ||
-                bullets[i].getPosition().y < 0 || bullets[i].getPosition().y > window.getSize().y) {
-                bullets.erase(bullets.begin() + i);
-                direction.erase(direction.begin() + i);
-            }*/
-        }
-
-        sf::Time spawn_rate = clock_two.getElapsedTime();
-        if (spawn_rate.asSeconds() >= 3.0f) {
-            bot.setPosition(rand() % 1000, rand() % 1000);
-            bots.push_back(bot);
-            enemy_direction.push_back(atan2(shape.getPosition().y - bot.getPosition().y,
-                    shape.getPosition().x - bot.getPosition().x));
-
-            spawn_rate = clock_two.restart();
-        }
-
-        for (int i = 0; i < (int)bots.size(); i++) {
-            window.draw(bots[i]);
-            enemy_direction[i] = atan2(shape.getPosition().y - bots[i].getPosition().y,
-                    shape.getPosition().x - bots[i].getPosition().x);
-            bots[i].move(0.3f * cos(enemy_direction[i]), 0.3f * sin(enemy_direction[i]));
-
-
-            /*if (bots[i].getPosition().x > 1000 || bots[i].getPosition().x < 0 ||
-                bots[i].getPosition().y < 0 || bots[i].getPosition().y > 700) {
-                bots.erase(bots.begin() + i);
-                enemy_direction.erase(enemy_direction.begin() + i);
-            }*/
-
-            enemy_hitbox = bots[i].getGlobalBounds();
-            shape_hitbox = shape.getGlobalBounds();
-            if (shape_hitbox.intersects(enemy_hitbox)) {
-                bots.erase(bots.begin() + i);
-                enemy_direction.erase(enemy_direction.begin() + i);
-                health_num-=10;
+            if (projectile.bullets[i].getPosition().x > window.getSize().x ||
+                projectile.bullets[i].getPosition().x < 0 ||
+                projectile.bullets[i].getPosition().y < 0 ||
+                projectile.bullets[i].getPosition().y > window.getSize().y) {
+                projectile.bullets.erase(projectile.bullets.begin() + i);
+                projectile.direction.erase(projectile.direction.begin() + i);
             }
         }
+        // ====================================================================
 
+        // ================= ENEMY ============================================
+        if (enemy.spawn_delay.getElapsedTime().asSeconds() >= 3.0f) {
+            enemy.bot.setPosition(rand() % 1000, rand() % 1000);
+            enemy.bots.push_back(enemy.bot);
+            enemy.direction.push_back(atan2(
+                    player.sprite.getPosition().y - enemy.bot.getPosition().y,
+                    player.sprite.getPosition().x - enemy.bot.getPosition().x));
+            enemy.spawn_delay.restart();
+        }
 
-        for (int i = 0; i < (int)bullets.size(); i++) {
-            for (int j = 0; j < (int)bots.size(); j++) {
-                bullet_hitbox = bullets[i].getGlobalBounds();
-                shape_hitbox = shape.getGlobalBounds();
-                if (bullet_hitbox.intersects(enemy_hitbox)) {
-                    bullets.erase(bullets.begin() + i);
-                    direction.erase(direction.begin() + i);
-                    bots.erase(bots.begin() + j);
-                    enemy_direction.erase(enemy_direction.begin() + j);
-                    score++;
+        for (int i = 0; i < (int)enemy.bots.size(); i++) {
+            window.draw(enemy.bots[i]);
+            enemy.direction[i] = atan2(
+                player.sprite.getPosition().y - enemy.bots[i].getPosition().y,
+                player.sprite.getPosition().x - enemy.bots[i].getPosition().x);
+            enemy.bots[i].move(0.3f * cos(enemy.direction[i]),
+                0.3f * sin(enemy.direction[i]));
+            enemy.hitbox = enemy.bots[i].getGlobalBounds();
+            player.hitbox = player.sprite.getGlobalBounds();
+            if (player.hitbox.intersects(enemy.hitbox)) {
+                enemy.bots.erase(enemy.bots.begin() + i);
+                enemy.direction.erase(enemy.direction.begin() + i);
+                player.health-=10;
+            }
+        }
+        // ====================================================================
+
+        // ================= COLLISION ========================================
+        for (int i = 0; i < (int)projectile.bullets.size(); i++) {
+            for (int j = 0; j < (int)enemy.bots.size(); j++) {
+                projectile.hitbox = projectile.bullets[i].getGlobalBounds();
+                player.hitbox = player.sprite.getGlobalBounds();
+                if (projectile.hitbox.intersects(enemy.hitbox)) {
+                    projectile.bullets.erase(projectile.bullets.begin() + i);
+                    projectile.direction.erase(
+                        projectile.direction.begin() + i);
+                    enemy.bots.erase(enemy.bots.begin() + j);
+                    enemy.direction.erase(enemy.direction.begin() + j);
+                    hud.score++;
                 }
             }
         }
-        window.display();
+        // ====================================================================
 
-        input(shape);
+        // ===================== AFTER-PROCESSING =============================
+        window.display();
+        input(player.sprite);
     }
+    // ========================================================================
 
     return 0;
 }
