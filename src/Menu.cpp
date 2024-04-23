@@ -19,8 +19,7 @@ sf::Text score;
 sf::Text max_score_txt;
 vector<sf::Text> options_list(2);
 
-Menu::Menu(float width, float height) : select(-1),
-    play(false), max_score(-1) {
+Menu::Menu() : select(-1), play(false), max_score(-1) {
     // Setup the default font of this menu: Source Code Pro.
     if (!font.loadFromFile("../assets/scpro.ttf")) {
         cout << "The required font has failed to load." << endl;

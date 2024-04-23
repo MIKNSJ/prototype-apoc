@@ -27,18 +27,35 @@ using namespace std;
 */
 class Player {
     public:
-        sf::CircleShape sprite;
+        sf::Texture texture;
+        sf::Sprite sprite;
+        // sf::CircleShape sprite           old player sprite outline;
+        sf::FloatRect bounds;
         sf::FloatRect hitbox;
         sf::Vector2f position;
         int health;
         bool invin;
 
-        Player() : sprite(25.f), hitbox(), position(), health(100),
-            invin(true) {
-            sprite.setFillColor(sf::Color::Red);
-            sprite.setPosition(640, 550);
+        Player(sf::RenderWindow &window) : texture(), sprite(), bounds(),
+            hitbox(), position(), health(100), invin(true) {
+            // sprite(25.f)                 removed from member init list
+
+            if (!texture.loadFromFile("../assets/fire.png")) {
+                cout << "The required texture has failed to load." << endl;
+                window.close();
+            }
+            sprite.setTexture(texture);
+            sprite.setScale(0.03, 0.03);
+            // sprite.setColor();
+            bounds = sprite.getLocalBounds();
+            sprite.setOrigin(bounds.width / 2.f, bounds.height / 2.f);
             hitbox = sprite.getGlobalBounds();
             position = sprite.getPosition();
+
+            //sprite.setColor(sf::Color::Red);
+            //sprite.setPosition(640, 550);
+            //hitbox = sprite.getGlobalBounds();
+            //position = sprite.getPosition();
         }
 };
 // ============================================================================
@@ -48,9 +65,12 @@ class Player {
 */
 class Enemy {
     public:
+        sf::Texture texture;
+        sf::Sprite sprite;
         sf::Clock spawn_timer;
-        sf::CircleShape bot;
-        vector<sf::CircleShape> bots;
+        // sf::CircleShape bot;             old enemy sprite outline
+        // vector<sf::CircleShape> bots;    storing old enemy sprites
+        vector<sf::Sprite> sprites;
         vector<float> direction;
         sf::FloatRect hitbox;
         sf::Vector2f position;
@@ -59,12 +79,24 @@ class Enemy {
         int perk;
         int perk_two;
 
-        Enemy() : spawn_timer(), bot(20.f), bots(), direction(), hitbox(),
-            position(), spawn_delay(5.0), speed_modifier(1.0), perk(0),
-            perk_two(0) {
-            bot.setFillColor(sf::Color::Magenta);
-            hitbox = bot.getGlobalBounds();
-            position = bot.getPosition();
+        Enemy(sf::RenderWindow &window) : texture(), sprite(), spawn_timer(),
+            sprites(), direction(), hitbox(), position(), spawn_delay(5.0),
+            speed_modifier(1.0), perk(0), perk_two(0) {
+            // bot(20.f), bots()            removed from member init list
+
+            if (!texture.loadFromFile("../assets/zomb.png")) {
+                cout << "The required texture has failed to load." << endl;
+                window.close();
+            }
+            sprite.setTexture(texture);
+            sprite.setScale(0.1, 0.1);
+            // sprite.setColor();
+            hitbox = sprite.getGlobalBounds();
+            position = sprite.getPosition();
+
+            // bot.setFillColor(sf::Color::Magenta);
+            // hitbox = bot.getGlobalBounds();
+            // position = bot.getPosition();
         }
 };
 // ============================================================================
@@ -79,10 +111,14 @@ class Projectile {
         vector<sf::CircleShape> bullets;
         vector<float> direction;
         sf::FloatRect hitbox;
-        sf::Vector2f start_position;
+        // sf::Vector2f start_position;         if player sprite == circle
+        sf::FloatRect bounds;
+        float x;
+        float y;
     
     Projectile(float size) : fire_delay(), bullet(size), bullets(),
-    direction(), hitbox(), start_position() {
+    direction(), hitbox(), bounds(), x(0), y(0) {
+        // start_position       removed from member init list
         bullet.setFillColor(sf::Color::White);
         hitbox = bullet.getGlobalBounds();
     }
@@ -174,11 +210,11 @@ int main()
 
 
     // ================ INIT ==================================================
-    Player player;
-    Enemy enemy;
+    Player player(window);
+    Enemy enemy(window);
     Projectile projectile(5.0f);
     HUD hud(window);
-    Menu menu(SCREEN_WIDTH, SCREEN_HEIGHT);
+    Menu menu;
     // ========================================================================
     
 
@@ -240,7 +276,7 @@ int main()
                     }
 
                     hud.score = 0;
-                    enemy.bots.clear();
+                    enemy.sprites.clear();
                     projectile.bullets.clear();
                     hud.pause_ind = false;
                     hud.game_over_ind = false;
@@ -265,7 +301,7 @@ int main()
                 }
 
                 if (sf::Keyboard::isKeyPressed(sf::Keyboard::Y)) {
-                    enemy.bots.clear();
+                    enemy.sprites.clear();
                     projectile.bullets.clear();
                     menu.play = true;
                     hud.pause_ind = false;
@@ -289,20 +325,20 @@ int main()
         if (!hud.pause_ind && !hud.game_over_ind) {        
             // ===================== SPRITE/PLAYER ============================
             // ==================== PLAYER BOUNDARIES =========================
-            if (player.sprite.getPosition().x < 0) {
-                player.sprite.setPosition(0, player.sprite.getPosition().y);
+            if (player.sprite.getPosition().x < 30) {
+                player.sprite.setPosition(30, player.sprite.getPosition().y);
             }
 
-            if (player.sprite.getPosition().x > 1230) {
-                player.sprite.setPosition(1230, player.sprite.getPosition().y);
+            if (player.sprite.getPosition().x > 1250) {
+                player.sprite.setPosition(1250, player.sprite.getPosition().y);
             }
 
-            if (player.sprite.getPosition().y < 0) {
-                player.sprite.setPosition(player.sprite.getPosition().x, 0);
+            if (player.sprite.getPosition().y < 30) {
+                player.sprite.setPosition(player.sprite.getPosition().x, 30);
             }
 
-            if (player.sprite.getPosition().y > 670) {
-                player.sprite.setPosition(player.sprite.getPosition().x, 670);
+            if (player.sprite.getPosition().y > 690) {
+                player.sprite.setPosition(player.sprite.getPosition().x, 690);
             }
             // ================================================================
             // ================================================================
@@ -349,14 +385,17 @@ int main()
             // ================================================================
 
             // ======================== PROJECTILE ============================
-            projectile.start_position = sf::Vector2f(
+            /* 
+                Projectiles spawn in the center of the player sprite (circle)
+                projectile.start_position = sf::Vector2f(
                 player.sprite.getPosition().x + player.sprite.getRadius(),
                 player.sprite.getPosition().y + player.sprite.getRadius());
+            */
             if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
                 if (projectile.fire_delay.getElapsedTime().asSeconds() >=
                     0.3f) {
                     projectile.fire_delay.restart();
-                    projectile.bullet.setPosition(projectile.start_position);
+                    projectile.bullet.setPosition(player.sprite.getPosition());
                     projectile.bullets.push_back(projectile.bullet);
                     projectile.direction.push_back(atan2(
                         sf::Mouse::getPosition(window).y -
@@ -364,7 +403,6 @@ int main()
                         sf::Mouse::getPosition(window).x -
                         player.sprite.getPosition().x));
                 }
-
             }
 
             for (int i = 0; i < (int)projectile.bullets.size(); i++) {
@@ -398,32 +436,32 @@ int main()
 
             if (enemy.spawn_timer.getElapsedTime().asSeconds() >=
                 enemy.spawn_delay) {
-                enemy.bot.setPosition(rand() % 1230, 0);
-                enemy.bots.push_back(enemy.bot);
+                enemy.sprite.setPosition(rand() % 1230, 0);
+                enemy.sprites.push_back(enemy.sprite);
                 enemy.direction.push_back(atan2(
                         player.sprite.getPosition().y -
-                        enemy.bot.getPosition().y,
+                        enemy.sprite.getPosition().y,
                         player.sprite.getPosition().x -
-                        enemy.bot.getPosition().x));
+                        enemy.sprite.getPosition().x));
                 enemy.spawn_timer.restart();
             }
 
-            for (int i = 0; i < (int)enemy.bots.size(); i++) {
-                window.draw(enemy.bots[i]);
+            for (int i = 0; i < (int)enemy.sprites.size(); i++) {
+                window.draw(enemy.sprites[i]);
                 enemy.direction[i] = atan2(
                     player.sprite.getPosition().y -
-                    enemy.bots[i].getPosition().y,
+                    enemy.sprites[i].getPosition().y,
                     player.sprite.getPosition().x -
-                    enemy.bots[i].getPosition().x);
-                enemy.bots[i].move(
+                    enemy.sprites[i].getPosition().x);
+                enemy.sprites[i].move(
                     enemy.speed_modifier * cos(enemy.direction[i]),
                     enemy.speed_modifier * sin(enemy.direction[i]));
 
-                enemy.hitbox = enemy.bots[i].getGlobalBounds();
+                enemy.hitbox = enemy.sprites[i].getGlobalBounds();
                 player.hitbox = player.sprite.getGlobalBounds();
 
                 if (player.hitbox.intersects(enemy.hitbox)) {
-                    enemy.bots.erase(enemy.bots.begin() + i);
+                    enemy.sprites.erase(enemy.sprites.begin() + i);
                     enemy.direction.erase(enemy.direction.begin() + i);
                     if (!player.invin) {
                         player.health--;
@@ -434,7 +472,7 @@ int main()
 
             // ================= COLLISION ====================================
             for (int i = 0; i < (int)projectile.bullets.size(); i++) {
-                for (int j = 0; j < (int)enemy.bots.size(); j++) {
+                for (int j = 0; j < (int)enemy.sprites.size(); j++) {
                     projectile.hitbox = projectile.bullets[i].getGlobalBounds();
                     player.hitbox = player.sprite.getGlobalBounds();
 
@@ -443,7 +481,7 @@ int main()
                             projectile.bullets.begin() + i);
                         projectile.direction.erase(
                             projectile.direction.begin() + i);
-                        enemy.bots.erase(enemy.bots.begin() + j);
+                        enemy.sprites.erase(enemy.sprites.begin() + j);
                         enemy.direction.erase(enemy.direction.begin() + j);
                         hud.score++;
                         enemy.perk++;

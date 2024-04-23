@@ -18,7 +18,7 @@
  * @param sprite The sprite to receive input.
  * @return none
 */
-void input(sf::CircleShape& shape);
+void input(sf::Sprite &sprite);
 
 
 

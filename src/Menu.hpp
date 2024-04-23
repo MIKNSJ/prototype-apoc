@@ -30,7 +30,7 @@ class Menu {
         bool play;
         int max_score;
 
-        Menu(float width, float height);
+        Menu();
         void navigateUp(int &n);
         void navigateDown(int &n);
         void draw_all(sf::RenderWindow &window, int curr_score);
