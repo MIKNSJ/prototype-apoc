@@ -7,6 +7,7 @@
 
 
 #include <SFML/Graphics.hpp>
+#include "Menu.hpp"
 #include "Input.hpp"
 #include <vector>
 #include <iostream>
@@ -30,8 +31,10 @@ class Player {
         sf::FloatRect hitbox;
         sf::Vector2f position;
         int health;
+        bool invin;
 
-        Player() : sprite(25.f), hitbox(), position(), health(100) {
+        Player() : sprite(25.f), hitbox(), position(), health(100),
+            invin(true) {
             sprite.setFillColor(sf::Color::Red);
             sprite.setPosition(640, 550);
             hitbox = sprite.getGlobalBounds();
@@ -78,8 +81,8 @@ class Projectile {
         sf::FloatRect hitbox;
         sf::Vector2f start_position;
     
-    Projectile() : fire_delay(), bullet(5.0f), bullets(), direction(), hitbox(),
-    start_position() {
+    Projectile(float size) : fire_delay(), bullet(size), bullets(),
+    direction(), hitbox(), start_position() {
         bullet.setFillColor(sf::Color::White);
         hitbox = bullet.getGlobalBounds();
     }
@@ -101,11 +104,19 @@ class HUD {
         sf::Text display_fps;
         sf::Text display_health;
         sf::Text display_score;
+        sf::Text pause;
+        sf::Text game_over;
+        bool game_over_ind;
         int score;
+        int last_score;
+        bool pause_ind;
+        bool show_crosshair;
 
         HUD(sf::RenderWindow &window) : font(), crosshair(5.f), fps_timer(),
             ig_timer(), display_ig_time(), minute(0), seconds(0), display_fps(),
-            display_health(), display_score(), score(0) {
+            display_health(), display_score(), pause(), game_over(),
+            game_over_ind(false), score(-1), last_score(-1), pause_ind(false),
+            show_crosshair(true) {
 
             // Setup the default font of this game: Source Code Pro.
             if (!font.loadFromFile("../assets/scpro.ttf")) {
@@ -113,23 +124,33 @@ class HUD {
                 window.close();
             }
 
-            crosshair.setFillColor(sf::Color::Red);
+            crosshair.setFillColor(sf::Color::Green);
 
             display_fps.setFont(font);
-            display_fps.setFillColor(sf::Color::Blue);
+            display_fps.setFillColor(sf::Color::White);
             display_fps.setPosition(1045, 650);
 
             display_ig_time.setFont(font);
-            display_ig_time.setFillColor(sf::Color::Blue);
+            display_ig_time.setFillColor(sf::Color::White);
             display_ig_time.setPosition(1045, 600);
 
             display_health.setFont(font);
-            display_health.setFillColor(sf::Color::Blue);
+            display_health.setFillColor(sf::Color::White);
             display_health.setPosition(50, 600);
 
             display_score.setFont(font);
-            display_score.setFillColor(sf::Color::Blue);
+            display_score.setFillColor(sf::Color::White);
             display_score.setPosition(50, 650);
+
+            game_over.setFont(font);
+            game_over.setString("[GAME OVER]");
+            game_over.setFillColor(sf::Color::Magenta);
+            game_over.setPosition(575, 575);
+
+            pause.setFont(font);
+            pause.setString("[PAUSED]");
+            pause.setFillColor(sf::Color::Magenta);
+            pause.setPosition(575, 0);
         }
 };
 // ============================================================================
@@ -148,8 +169,6 @@ int main()
         "apoc.exe");
     window.setMouseCursorVisible(false);
     window.setFramerateLimit(120);
-    bool pause = false;
-    bool pause_key = false;
     // ========================================================================
 
 
@@ -157,8 +176,9 @@ int main()
     // ================ INIT ==================================================
     Player player;
     Enemy enemy;
-    Projectile projectile;
+    Projectile projectile(5.0f);
     HUD hud(window);
+    Menu menu(SCREEN_WIDTH, SCREEN_HEIGHT);
     // ========================================================================
     
 
@@ -186,17 +206,87 @@ int main()
             */
             if (event.type == sf::Event::KeyPressed) {
                 if (sf::Keyboard::isKeyPressed(sf::Keyboard::P)) {
-                    pause = true;
+                    hud.pause_ind = true;
                 }   
 
                 if (sf::Keyboard::isKeyPressed(sf::Keyboard::O)) {
-                    pause = false;
+                    hud.pause_ind = false;
+                }
+
+                if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
+                    menu.navigateUp(menu.select);
+                }
+
+                if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
+                    menu.navigateDown(menu.select);
+                }
+
+                if (sf::Keyboard::isKeyPressed(sf::Keyboard::Enter)) {
+                    if (menu.select == 0) {
+                        menu.play = true;
+                        menu.select = -1;
+                    } 
+
+                    if (menu.select == 1) {
+                        window.close();
+                    }
+
+                    if (hud.game_over_ind) {
+                        player.invin = true;
+                        menu.play = false;
+                        menu.select = 0;
+                    } else {
+                        player.invin = false;
+                    }
+
+                    hud.score = 0;
+                    enemy.bots.clear();
+                    projectile.bullets.clear();
+                    hud.pause_ind = false;
+                    hud.game_over_ind = false;
+                    player.sprite.setPosition(640, 550);
+                    player.health = 3;
+                    enemy.spawn_delay = 5.0f;
+                    enemy.speed_modifier = 1.0f;
+                    hud.ig_timer.restart();
+                    hud.fps_timer.restart();
+                }
+
+                if (sf::Keyboard::isKeyPressed(sf::Keyboard::U)) {
+                    hud.show_crosshair = false;
+                }
+
+                if (sf::Keyboard::isKeyPressed(sf::Keyboard::I)) {
+                    hud.show_crosshair = true;
+                }
+
+                if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape)) {
+                    window.close();
+                }
+
+                if (sf::Keyboard::isKeyPressed(sf::Keyboard::Y)) {
+                    enemy.bots.clear();
+                    projectile.bullets.clear();
+                    menu.play = true;
+                    hud.pause_ind = false;
+                    hud.game_over_ind = false;
+                    player.sprite.setPosition(640, 550);
+                    player.health = 3;
+                    player.invin = false;
+                    enemy.spawn_delay = 5.0f;
+                    enemy.speed_modifier = 1.0f;
+                    hud.ig_timer.restart();
+                    hud.fps_timer.restart();
                 }
             }
         }
         // ====================================================================
+        if (player.health == 0) {
+            hud.game_over_ind = true;
+            hud.pause_ind = true;
+        }
 
-        if (pause == false) {        
+        if (!hud.pause_ind && !hud.game_over_ind) {        
             // ===================== SPRITE/PLAYER ============================
             // ==================== PLAYER BOUNDARIES =========================
             if (player.sprite.getPosition().x < 0) {
@@ -242,13 +332,20 @@ int main()
             // ================================================================
 
             // ============== DRAW ============================================
-            window.clear();
-            window.draw(player.sprite);
-            window.draw(hud.display_health);
-            window.draw(hud.display_ig_time);
-            window.draw(hud.crosshair);
-            window.draw(hud.display_score);
-            window.draw(hud.display_fps);
+            if (!menu.play) {
+                window.clear();
+                menu.draw_all(window, hud.last_score);
+            } else {
+                window.clear();
+                window.draw(player.sprite);
+                window.draw(hud.display_health);
+                window.draw(hud.display_ig_time);
+                if (hud.show_crosshair) {
+                    window.draw(hud.crosshair);
+                }
+                window.draw(hud.display_score);
+                window.draw(hud.display_fps);
+            }
             // ================================================================
 
             // ======================== PROJECTILE ============================
@@ -324,10 +421,13 @@ int main()
 
                 enemy.hitbox = enemy.bots[i].getGlobalBounds();
                 player.hitbox = player.sprite.getGlobalBounds();
+
                 if (player.hitbox.intersects(enemy.hitbox)) {
                     enemy.bots.erase(enemy.bots.begin() + i);
                     enemy.direction.erase(enemy.direction.begin() + i);
-                    player.health--;
+                    if (!player.invin) {
+                        player.health--;
+                    }
                 }
             }
             // ================================================================
@@ -348,6 +448,8 @@ int main()
                         hud.score++;
                         enemy.perk++;
                         enemy.perk_two++;
+
+                        hud.last_score = hud.score;
                     }
                 }
             }
@@ -356,6 +458,12 @@ int main()
             // ===================== AFTER-PROCESSING =========================
             window.display();
             input(player.sprite);
+        } else if (hud.pause_ind && !hud.game_over_ind) {
+            window.draw(hud.pause);
+            window.display();
+        } else {
+            window.draw(hud.game_over);
+            window.display();
         }
         // ====================================================================
     }
