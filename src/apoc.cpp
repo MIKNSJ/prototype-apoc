@@ -7,6 +7,7 @@
 
 
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include "Menu.hpp"
 #include "Input.hpp"
 #include <vector>
@@ -112,12 +113,9 @@ class Projectile {
         vector<float> direction;
         sf::FloatRect hitbox;
         // sf::Vector2f start_position;         if player sprite == circle
-        sf::FloatRect bounds;
-        float x;
-        float y;
     
     Projectile(float size) : fire_delay(), bullet(size), bullets(),
-    direction(), hitbox(), bounds(), x(0), y(0) {
+        direction(), hitbox() {
         // start_position       removed from member init list
         bullet.setFillColor(sf::Color::White);
         hitbox = bullet.getGlobalBounds();
@@ -189,6 +187,62 @@ class HUD {
             pause.setPosition(575, 0);
         }
 };
+
+
+
+/**
+ * Sound class
+*/
+class Sound {
+    public:
+        sf::SoundBuffer pro_buffer;
+        sf::Sound projectile_fire;
+        sf::SoundBuffer enemy_buf;
+        sf::Sound enemy_dead;
+        sf::SoundBuffer scroll_buf;
+        sf::Sound scroll;
+        sf::SoundBuffer gg_buffer;
+        sf::Sound gg;
+        sf::Music music;
+
+        Sound() : pro_buffer(), projectile_fire(), enemy_buf(), enemy_dead(),
+            scroll_buf(), scroll(), gg_buffer(), gg(), music() {
+            if (!pro_buffer.loadFromFile("../assets/fire_2.mp3")) {
+                cout << "The required sound has not been loaded." << endl;
+            } else {
+                projectile_fire.setBuffer(pro_buffer);
+                projectile_fire.setVolume(30);
+            }
+
+            if (!enemy_buf.loadFromFile("../assets/fire_4.mp3")) {
+                cout << "The required sound has not been loaded." << endl;
+            } else {
+                enemy_dead.setBuffer(enemy_buf);
+                enemy_dead.setVolume(30);
+            }
+
+            if (!scroll_buf.loadFromFile("../assets/fire_6.mp3")) {
+                cout << "The required sound has not been loaded." << endl;
+            } else {
+                scroll.setBuffer(scroll_buf);
+                scroll.setVolume(30);
+            }
+
+            if (!gg_buffer.loadFromFile("../assets/gg.mp3")) {
+                cout << "The required sound has not been loaded." << endl;
+            } else {
+                gg.setBuffer(gg_buffer);
+                gg.setVolume(30);
+            }
+
+            if (!music.openFromFile("../assets/eprm-ingame.mp3")) {
+                cout << "The required sound has not been loaded." << endl;
+            } else {
+                music.setVolume(30);
+                music.setLoop(true);
+            }
+        }
+}; 
 // ============================================================================
 // ======================== END OF CLASSES ====================================
 
@@ -215,6 +269,8 @@ int main()
     Projectile projectile(5.0f);
     HUD hud(window);
     Menu menu;
+    Sound sound;
+    sound.music.play();
     // ========================================================================
     
 
@@ -226,12 +282,14 @@ int main()
         sf::Event event;
         while (window.pollEvent(event))
         {
-            if (event.type == sf::Event::Closed)
+            if (event.type == sf::Event::Closed) {
+                sound.scroll.play();
                 window.close();
+            }
             
             // catch the resize events
             if (event.type == sf::Event::Resized) {
-                // ...
+                sound.scroll.play();
             }
 
             /**
@@ -242,23 +300,30 @@ int main()
             */
             if (event.type == sf::Event::KeyPressed) {
                 if (sf::Keyboard::isKeyPressed(sf::Keyboard::P)) {
+                    sound.scroll.play();
+                    sound.music.pause();
                     hud.pause_ind = true;
                 }   
 
                 if (sf::Keyboard::isKeyPressed(sf::Keyboard::O)) {
+                    sound.scroll.play();
+                    sound.music.play();
                     hud.pause_ind = false;
                 }
 
                 if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
+                    sound.scroll.play();
                     menu.navigateUp(menu.select);
                 }
 
                 if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
+                    sound.scroll.play();
                     menu.navigateDown(menu.select);
                 }
 
                 if (sf::Keyboard::isKeyPressed(sf::Keyboard::Enter)) {
                     if (menu.select == 0) {
+                        sound.scroll.play();
                         menu.play = true;
                         menu.select = -1;
                     } 
@@ -271,17 +336,19 @@ int main()
                         player.invin = true;
                         menu.play = false;
                         menu.select = 0;
+                        sound.gg.play();
                     } else {
                         player.invin = false;
                     }
 
+                    sound.music.play();
                     hud.score = 0;
                     enemy.sprites.clear();
                     projectile.bullets.clear();
                     hud.pause_ind = false;
                     hud.game_over_ind = false;
                     player.sprite.setPosition(640, 550);
-                    player.health = 3;
+                    player.health = 1;
                     enemy.spawn_delay = 5.0f;
                     enemy.speed_modifier = 1.0f;
                     hud.ig_timer.restart();
@@ -289,30 +356,36 @@ int main()
                 }
 
                 if (sf::Keyboard::isKeyPressed(sf::Keyboard::U)) {
+                    sound.scroll.play();
                     hud.show_crosshair = false;
                 }
 
                 if (sf::Keyboard::isKeyPressed(sf::Keyboard::I)) {
+                    sound.scroll.play();
                     hud.show_crosshair = true;
                 }
 
                 if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape)) {
+                    sound.scroll.play();
                     window.close();
                 }
 
                 if (sf::Keyboard::isKeyPressed(sf::Keyboard::Y)) {
+                    sound.music.stop();
+                    sound.scroll.play();
                     enemy.sprites.clear();
                     projectile.bullets.clear();
                     menu.play = true;
                     hud.pause_ind = false;
                     hud.game_over_ind = false;
                     player.sprite.setPosition(640, 550);
-                    player.health = 3;
+                    player.health = 100;
                     player.invin = false;
                     enemy.spawn_delay = 5.0f;
                     enemy.speed_modifier = 1.0f;
                     hud.ig_timer.restart();
                     hud.fps_timer.restart();
+                    sound.music.play();
                 }
             }
         }
@@ -394,6 +467,7 @@ int main()
             if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
                 if (projectile.fire_delay.getElapsedTime().asSeconds() >=
                     0.3f) {
+                    sound.projectile_fire.play();
                     projectile.fire_delay.restart();
                     projectile.bullet.setPosition(player.sprite.getPosition());
                     projectile.bullets.push_back(projectile.bullet);
@@ -424,14 +498,14 @@ int main()
             // ================================================================
 
             // ================= ENEMY ========================================
-            if (enemy.perk == 5 && enemy.spawn_delay > 1.0) {
-                enemy.perk = 0;
+            if (enemy.perk == 2 && enemy.spawn_delay > 1.0) {
                 enemy.spawn_delay-=0.1;
+                enemy.perk = 0;
             }
 
-            if (enemy.perk_two == 10 && enemy.speed_modifier < 3.0) {
-                enemy.perk_two = 0;
+            if (enemy.perk_two == 5 && enemy.speed_modifier < 3.0) {
                 enemy.speed_modifier+=0.1;
+                enemy.perk_two = 0;
             }
 
             if (enemy.spawn_timer.getElapsedTime().asSeconds() >=
@@ -477,6 +551,7 @@ int main()
                     player.hitbox = player.sprite.getGlobalBounds();
 
                     if (projectile.hitbox.intersects(enemy.hitbox)) {
+                        sound.enemy_dead.play();
                         projectile.bullets.erase(
                             projectile.bullets.begin() + i);
                         projectile.direction.erase(
@@ -501,6 +576,7 @@ int main()
             window.display();
         } else {
             window.draw(hud.game_over);
+            sound.music.stop();
             window.display();
         }
         // ====================================================================

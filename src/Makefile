@@ -1,7 +1,7 @@
 COMP = g++
 PACKAGES = -I../packages/Include -L../packages/lib
 BASIC_FLAGS?=-g -Wall -pedantic -Wextra -static-libstdc++
-ADD_FLAGS = -lsfml-graphics -lsfml-window -lsfml-system
+ADD_FLAGS = -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio
 TEST_FLAGS = -static-libstdc++
 FILES = Menu.cpp Input.cpp -o apoc apoc.cpp
 
