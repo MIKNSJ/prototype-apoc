@@ -378,7 +378,6 @@ int main()
                     menu.play = true;
                     hud.pause_ind = false;
                     hud.game_over_ind = false;
-                    player.sprite.setPosition(640, 550);
                     player.health = 100;
                     player.invin = false;
                     enemy.spawn_delay = 5.0f;
@@ -386,6 +385,24 @@ int main()
                     hud.ig_timer.restart();
                     hud.fps_timer.restart();
                     sound.music.play();
+                }
+
+                if (sf::Keyboard::isKeyPressed(sf::Keyboard::M)) {
+                    sound.music.stop();
+                    sound.music.play();
+                    player.invin = true;
+                    menu.play = false;
+                    menu.select = 0;
+                    hud.score = 0;
+                    enemy.sprites.clear();
+                    projectile.bullets.clear();
+                    hud.pause_ind = false;
+                    hud.game_over_ind = false;
+                    player.sprite.setPosition(640, 550);
+                    enemy.spawn_delay = 5.0f;
+                    enemy.speed_modifier = 1.0f;
+                    hud.ig_timer.restart();
+                    hud.fps_timer.restart();
                 }
             }
         }
@@ -498,7 +515,7 @@ int main()
             // ================================================================
 
             // ================= ENEMY ========================================
-            if (enemy.perk == 2 && enemy.spawn_delay > 1.0) {
+            if (enemy.perk == 1 && enemy.spawn_delay > 1.0) {
                 enemy.spawn_delay-=0.1;
                 enemy.perk = 0;
             }
