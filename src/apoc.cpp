@@ -45,6 +45,7 @@ class Player {
                 cout << "The required texture has failed to load." << endl;
                 window.close();
             }
+            sprite.setPosition(640, 550);
             sprite.setTexture(texture);
             sprite.setScale(0.03, 0.03);
             // sprite.setColor();
@@ -211,40 +212,42 @@ class Sound {
                 cout << "The required sound has not been loaded." << endl;
             } else {
                 projectile_fire.setBuffer(pro_buffer);
-                projectile_fire.setVolume(30);
+                projectile_fire.setVolume(50);
             }
 
             if (!enemy_buf.loadFromFile("../assets/fire_4.mp3")) {
                 cout << "The required sound has not been loaded." << endl;
             } else {
                 enemy_dead.setBuffer(enemy_buf);
-                enemy_dead.setVolume(30);
+                enemy_dead.setVolume(50);
             }
 
             if (!scroll_buf.loadFromFile("../assets/fire_6.mp3")) {
                 cout << "The required sound has not been loaded." << endl;
             } else {
                 scroll.setBuffer(scroll_buf);
-                scroll.setVolume(30);
+                scroll.setVolume(50);
             }
 
             if (!gg_buffer.loadFromFile("../assets/gg.mp3")) {
                 cout << "The required sound has not been loaded." << endl;
             } else {
                 gg.setBuffer(gg_buffer);
-                gg.setVolume(30);
+                gg.setVolume(50);
             }
 
             if (!music.openFromFile("../assets/eprm-ingame.mp3")) {
                 cout << "The required sound has not been loaded." << endl;
             } else {
-                music.setVolume(30);
+                music.setVolume(50);
                 music.setLoop(true);
             }
         }
 }; 
 // ============================================================================
 // ======================== END OF CLASSES ====================================
+
+
 
 /**
  * Enables for user input of a vector
@@ -308,6 +311,7 @@ int main()
                 if (sf::Keyboard::isKeyPressed(sf::Keyboard::O)) {
                     sound.scroll.play();
                     sound.music.play();
+                    sound.music.setLoop(true);
                     hud.pause_ind = false;
                 }
 
@@ -342,13 +346,14 @@ int main()
                     }
 
                     sound.music.play();
+                    sound.music.setLoop(true);
                     hud.score = 0;
                     enemy.sprites.clear();
                     projectile.bullets.clear();
                     hud.pause_ind = false;
                     hud.game_over_ind = false;
                     player.sprite.setPosition(640, 550);
-                    player.health = 1;
+                    player.health = 100;
                     enemy.spawn_delay = 5.0f;
                     enemy.speed_modifier = 1.0f;
                     hud.ig_timer.restart();
@@ -515,7 +520,7 @@ int main()
             // ================================================================
 
             // ================= ENEMY ========================================
-            if (enemy.perk == 1 && enemy.spawn_delay > 1.0) {
+            if (enemy.perk == 2 && enemy.spawn_delay > 1.0) {
                 enemy.spawn_delay-=0.1;
                 enemy.perk = 0;
             }
@@ -565,7 +570,7 @@ int main()
             for (int i = 0; i < (int)projectile.bullets.size(); i++) {
                 for (int j = 0; j < (int)enemy.sprites.size(); j++) {
                     projectile.hitbox = projectile.bullets[i].getGlobalBounds();
-                    player.hitbox = player.sprite.getGlobalBounds();
+                    enemy.hitbox = enemy.sprites[j].getGlobalBounds();
 
                     if (projectile.hitbox.intersects(enemy.hitbox)) {
                         sound.enemy_dead.play();
@@ -578,8 +583,8 @@ int main()
                         hud.score++;
                         enemy.perk++;
                         enemy.perk_two++;
-
                         hud.last_score = hud.score;
+                        break;
                     }
                 }
             }
